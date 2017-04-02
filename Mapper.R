@@ -13,11 +13,14 @@ to_map = read_reps() %>% by_committee('HLIG')
 
 map_reps = function(to_map) {
   fips = read_fips()
-   to_map = to_map %>% 
+   to_map_join = to_map %>% 
     left_join(fips, by=c(state='USPS'))
   
-  boundaries = raster::shapefile('data/tl_2016_us_cd115/tl_2016_us_cd115.shp')
-  bounds = merge(boundaries, to_map, 
+  # boundaries = raster::shapefile('data/tl_2016_us_cd115/tl_2016_us_cd115.shp')
+  # bsimp = rmapshaper::ms_simplify(boundaries)
+  # raster::shapefile(bsimp, 'data/cd115_simp/cd115_simp.shp')
+  boundaries = raster::shapefile('data/cd115_simp/cd115_simp.shp')
+  bounds = merge(boundaries, to_map_join, 
                      by.x=c('STATEFP', 'CD115FP'), by.y=c('FIPS', 'district'),
                      all.x=FALSE) %>% 
     spTransform(CRS("+init=EPSG:4326"))
