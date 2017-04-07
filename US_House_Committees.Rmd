@@ -1,0 +1,39 @@
+---
+title: "Committees of the US House of Representatives"
+author: ""
+date: '`r Sys.Date()`'
+output: kjutil::small_format
+---
+
+```{r parameters, echo=FALSE,include=FALSE,message=FALSE}
+knitr::opts_chunk$set(echo=FALSE,fig.width=10, fig.height=8, comment=NA, warning=FALSE, message=FALSE)
+library(crosstalk)
+library(leaflet)
+
+source('Readers.R')
+source('Mapper.R')
+```
+```{r data, cache=TRUE}
+reps = read_reps()
+bounds = make_boundaries(reps)
+bounds$label = paste(bounds$official_full, bounds$code, sep=', ')
+comm_xref = house_committee_xref()
+```
+
+```{r}
+comm_data = SharedData$new(comm_xref, key=~bioguide, group='reps')
+reps_data = SharedData$new(bounds, key=~bioguide, group='reps')
+filter_select('ctte', 'Committee', comm_data, ~name)
+
+#assignInNamespace('find_data.default', find_data.default, 'lazyeval')
+leaflet(reps_data) %>% addProviderTiles('Esri.WorldTopoMap') %>% 
+    addPolygons(color='black', 
+                fillColor=~color, 
+                weight=2, fillOpacity=0.4,
+                label=~label, 
+                popup=~popup,
+                highlightOptions = 
+                highlightOptions(opacity=1, fillOpacity=0.6,
+                                 weight=3, bringToFront = TRUE))
+
+```

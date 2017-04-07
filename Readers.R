@@ -40,7 +40,8 @@ by_committee = function(reps, comm) {
 #' Make a cross-reference of committee ID and name to House member bioguide
 house_committee_xref = function() {
   comms = read_committees() %>% filter(type!='senate') %>% select(name, thomas_id)
-  assignments = yaml::yaml.load_file('../congress-legislators/committee-membership-current.yaml')[names(assignments) %in% comms$thomas_id]
+  assignments = yaml::yaml.load_file('../congress-legislators/committee-membership-current.yaml')
+  assignments = assignments[names(assignments) %in% comms$thomas_id]
   tibble(thomas_id=names(assignments), 
                         members=map(assignments, ~map_df(., as_tibble))) %>% 
     unnest %>% select(thomas_id, bioguide) %>% 
