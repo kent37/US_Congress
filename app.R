@@ -6,37 +6,38 @@ library(leaflet)
 source('Readers.R')
 source('Mapper.R')
 
+# Read committee assignments
+comm_xref = house_committee_xref() %>% mutate(
+  link = paste0('<a href="', url, '" target="_blank">', name, '</a>')
+)
+
 # Read representatives and districts
 reps = read_reps()
 if (file.exists('data/bounds.RData')) {
   load('data/bounds.RData')
 } else {
   bounds = make_boundaries(reps)
+  
+  # Make mouseover label, dropdown entry and popup text for reps
+  bounds$label = paste(bounds$official_full, bounds$code, sep=', ')
+  bounds$lookup = paste(bounds$last, ', ', bounds$first, ' (', bounds$code, ')', sep='')
+  
+  make_popup = function(d) {
+    lapply(1:nrow(d),
+       function(i) {
+         row = d[i,]
+   HTML(as.character(p(
+     tags$a(tags$b(row$official_full), href=row$url, target='_blank'), br(),
+     row$code, br(),
+     row$phone, br(),
+     HTML(paste(comm_xref$link[comm_xref$bioguide==row$bioguide], collapse='<br>'))
+     )))
+   })
+  }
+  
+  bounds$popup = make_popup(bounds@data)
+  save(bounds, file='data/bounds.RData')
 }
-
-# Read committee assignments
-comm_xref = house_committee_xref() %>% mutate(
-  link = paste0('<a href="', url, '" target="_blank">', name, '</a>')
-)
-
-# Make mouseover label, dropdown entry and popup text for reps
-bounds$label = paste(bounds$official_full, bounds$code, sep=', ')
-bounds$lookup = paste(bounds$last, ', ', bounds$first, ' (', bounds$code, ')', sep='')
-
-make_popup = function(d) {
-  lapply(1:nrow(d),
-     function(i) {
-       row = d[i,]
- HTML(as.character(p(
-   tags$a(tags$b(row$official_full), href=row$url, target='_blank'), br(),
-   row$code, br(),
-   row$phone, br(),
-   HTML(paste(comm_xref$link[comm_xref$bioguide==row$bioguide], collapse='<br>'))
-   )))
- })
-}
-
-bounds$popup = make_popup(bounds@data)
 
 # Make the lists for the two select inputs
 # Using thomas_id for committee and bioguide code for reps keeps the URL
@@ -127,8 +128,12 @@ server <- function(input, output, session) {
     
     # Add to the map. Add Democrats second, their districts tend to be small.
     selected = selected_bounds()
+    bbox = selected@bbox
     leafletProxy('map') %>% 
-      clearShapes()
+      clearShapes() %>% 
+      fitBounds(bbox['x', 'min'], bbox['y', 'min'], 
+                min(bbox['x', 'max'], -66.9513812), bbox['y', 'max'])
+
     
     if (sum(selected$party != 'Democrat') > 0) {
     leafletProxy('map') %>% 
