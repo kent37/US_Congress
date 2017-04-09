@@ -38,9 +38,32 @@ make_popup = function(d) {
 
 bounds$popup = make_popup(bounds@data)
 
+# Make the lists for the two select inputs
+# Using thomas_id for committee and bioguide code for reps keeps the URL
+# length down
+comm_list = local({
+  comm_unique = unique(comm_xref %>% select(thomas_id, name))
+  comm_unique$thomas_id %>% 
+    set_names(comm_unique$name) %>% 
+    `[`(order(comm_unique$name))
+})
+
+rep_list = bounds$bioguide %>% set_names(bounds$lookup) %>% `[`(order(bounds$lookup))
+
 # Back end
 server <- function(input, output, session) {
-  # Base map
+  # Update query string with bookmark
+  observe({
+    # Trigger this observer every time an input changes
+    reactiveValuesToList(input)
+    session$doBookmark()
+  })
+  onBookmarked(function(url) {
+    updateQueryString(url)
+  })
+  setBookmarkExclude(c('map_bounds', 'map_shape_mouseout', 'map_shape_mouseover',
+                       'map_shape_click'))
+    # Base map
   bbox = bounds@bbox
   output$map <- renderLeaflet({
     leaflet() %>% addProviderTiles('Esri.WorldTopoMap') %>% 
@@ -65,7 +88,7 @@ server <- function(input, output, session) {
   # Watch for committee changes
   observe({
     if (!is.null(input$comms) && input$comms != '') {
-      selected_comms = comm_xref %>% filter(name %in% input$comms)
+      selected_comms = comm_xref %>% filter(thomas_id %in% input$comms)
       if (nrow(selected_comms) > 0) {
         selected_bounds(bounds[bounds$bioguide %in% selected_comms$bioguide,])
         updateSelectizeInput(session, 'rep', selected='')
@@ -77,14 +100,13 @@ server <- function(input, output, session) {
   # Watch for rep changes
   observe({
     if (!is.null(input$rep) && input$rep != '') {
-      selected_bounds(bounds[bounds$lookup == input$rep,])
+      selected_bounds(bounds[bounds$bioguide %in% input$rep,])
       updateSelectizeInput(session, 'comms', selected='')
     }
   })
   
   # Update the map if level or selected_bounds changes
   observe({
-    
     # Map style changes depending on zoom level
     if (level() == 1) {
       # Zoomed out, make everything bold and dark
@@ -136,7 +158,8 @@ server <- function(input, output, session) {
 }
 
 # Front end
-ui <- navbarPage(title = "Committees of the US House of Representatives",
+ui <- function(request) {
+  navbarPage(title = "Committees of the US House of Representatives",
                  inverse=TRUE,
     # Bootswatch style sheet
     tags$head(tags$link(rel = "stylesheet", type = "text/css", 
@@ -145,17 +168,17 @@ href = "https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/spacelab/bootstrap.min.
   fluidRow(
     column(6, offset=1,
       selectizeInput('comms', 'Choose a committee:', 
-               c('', unique(comm_xref$name)), multiple = FALSE,
+               c('', comm_list), multiple = FALSE,
                options = NULL, width='400px',
-               selected="House Permanent Select Committee on Intelligence")),
+               selected="HLIG")),
     column(5,
       selectizeInput('rep', 'Choose a representative:', 
-               c('', sort(bounds$lookup)), multiple = FALSE,
+               c('', sort(rep_list)), multiple = TRUE,
                options = NULL, width='400px'))
   ),
   fluidRow(
       leafletOutput('map', width='95%', height=600)
   )
-)
+)}
 
-shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server, enableBookmarking='url')
