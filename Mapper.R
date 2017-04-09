@@ -25,19 +25,6 @@ make_boundaries = function(reps) {
                      all.x=FALSE) %>% 
     spTransform(CRS("+init=EPSG:4326"))
   
-  make_popup = function(d) {
-    lapply(1:nrow(d),
-       function(i) {
-         row = d[i,]
-   HTML(as.character(p(
-     tags$a(tags$b(row$official_full), href=row$url, target='_blank'), br(),
-     row$code, br(),
-     row$phone
-     )))
-   })
-  }
-  
-  bounds$popup = make_popup(bounds@data)
   bounds$color = ifelse(bounds$party=='Democrat', 'blue', 
                         ifelse(bounds$party=='Republican', 'red', 'darkyellow'))
   bounds

@@ -12,7 +12,24 @@ if (file.exists('data/bounds.RData')) {
 }
 
 bounds$label = paste(bounds$official_full, bounds$code, sep=', ')
-comm_xref = house_committee_xref()
+comm_xref = house_committee_xref() %>% mutate(
+  link = paste0('<a href="', url, '" target="_blank">', name, '</a>')
+)
+
+make_popup = function(d) {
+  lapply(1:nrow(d),
+     function(i) {
+       row = d[i,]
+ HTML(as.character(p(
+   tags$a(tags$b(row$official_full), href=row$url, target='_blank'), br(),
+   row$code, br(),
+   row$phone, br(),
+   HTML(paste(comm_xref$link[comm_xref$bioguide==row$bioguide], collapse='<br>'))
+   )))
+ })
+}
+
+bounds$popup = make_popup(bounds@data)
 
 server <- function(input, output) {
   bbox = bounds@bbox
