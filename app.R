@@ -130,9 +130,10 @@ server <- function(input, output, session) {
     selected = selected_bounds()
     bbox = selected@bbox
     leafletProxy('map') %>% 
-      clearShapes() %>% 
-      fitBounds(bbox['x', 'min'], bbox['y', 'min'], 
-                min(bbox['x', 'max'], -66.9513812), bbox['y', 'max'])
+      clearShapes() 
+    # %>% 
+    #   fitBounds(bbox['x', 'min'], bbox['y', 'min'], 
+    #             min(bbox['x', 'max'], -66.9513812), bbox['y', 'max'])
 
     
     if (sum(selected$party != 'Democrat') > 0) {
