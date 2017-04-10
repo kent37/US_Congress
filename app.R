@@ -165,11 +165,11 @@ server <- function(input, output, session) {
 # Front end
 ui <- function(request) {
   navbarPage(title = "Committees of the US House of Representatives",
-                 inverse=TRUE,
+                 inverse=TRUE, selected='Map',
     # Bootswatch style sheet
     tags$head(tags$link(rel = "stylesheet", type = "text/css", 
 href = "https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/spacelab/bootstrap.min.css")),
-  tabPanel(""),
+  tabPanel("Map",
   fluidRow(
     column(6, offset=1,
       selectizeInput('comms', 'Choose a committee:', 
@@ -184,6 +184,26 @@ href = "https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/spacelab/bootstrap.min.
   fluidRow(
       leafletOutput('map', width='95%', height=600)
   )
+  ),
+  tabPanel('About',
+           p('Information about Members of Congress from', 
+             a('https://github.com/unitedstates/congress-legislators',
+               href='https://github.com/unitedstates/congress-legislators', 
+               target='_blank'), '.'
+           ),
+           p('District boundaries from  US Census', 
+             a('TIGER/Line shapefiles', 
+               href='https://www.census.gov/geo/maps-data/data/tiger-line.html',
+               target='_blank'),
+             'for the 115th Congress.', 
+             'Note: The boundaries were simplified using',
+             a('rmapshaper', 
+               href='https://cran.r-project.org/web/packages/rmapshaper/index.html',
+               target='_blank'), 'so they are not exact.'),
+           p('Mapping by Kent S Johnson for', 
+             a('Indivisible Somerville', 
+               href='https://indivisiblesomerville.org', target='_blank'), '.')
+           )
 )}
 
 shinyApp(ui = ui, server = server, enableBookmarking='url')
