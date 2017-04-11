@@ -86,12 +86,22 @@ server <- function(input, output, session) {
     if (level() != level_) level(level_)
   })
   
+  clear_and_set_bounds = function(b) {
+    bbox = b@bbox
+    leafletProxy('map') %>% 
+      clearShapes() %>% 
+      fitBounds(bbox['x', 'min'], bbox['y', 'min'], 
+               min(bbox['x', 'max'], -66.9513812), bbox['y', 'max'])
+    selected_bounds(b)
+  }
+  
   # Watch for committee changes
   observe({
     if (!is.null(input$comms) && input$comms != '') {
       selected_comms = comm_xref %>% filter(thomas_id %in% input$comms)
       if (nrow(selected_comms) > 0) {
-        selected_bounds(bounds[bounds$bioguide %in% selected_comms$bioguide,])
+        b = bounds[bounds$bioguide %in% selected_comms$bioguide,]
+        clear_and_set_bounds(b)
         updateSelectizeInput(session, 'rep', selected='')
       }
       else(selected_bounds(bounds))
@@ -101,7 +111,8 @@ server <- function(input, output, session) {
   # Watch for rep changes
   observe({
     if (!is.null(input$rep) && input$rep != '') {
-      selected_bounds(bounds[bounds$bioguide %in% input$rep,])
+      b = bounds[bounds$bioguide %in% input$rep,]
+      clear_and_set_bounds(b)
       updateSelectizeInput(session, 'comms', selected='')
     }
   })
@@ -113,8 +124,8 @@ server <- function(input, output, session) {
       # Zoomed out, make everything bold and dark
       weight = 4
       opacity = 1
-      fillOpacity = 0.6
-      highlightWeight = 5
+      fillOpacity = 0.5
+      highlightWeight = 6
       highlightFillOpacity = 0.6
     } else {
       # Lighten up when zoomed it
